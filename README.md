@@ -1,5 +1,7 @@
 # The Shire – Scène 3D interactive avec Three.js
 
+👉 [Voir la démo en ligne sur GitHub Pages](https://marie-gwenaellefahem.github.io/ThreeJs/)
+
 Ce projet propose une reconstitution stylisée de la Comté (The Shire) inspirée de l'univers du Seigneur des Anneaux, réalisée en JavaScript avec la bibliothèque Three.js.
 
 ## Fonctionnalités principales
@@ -30,12 +32,12 @@ Ce projet propose une reconstitution stylisée de la Comté (The Shire) inspiré
   - Placement harmonieux des éléments pour un rendu esthétique.
 
 ## Lancer le projet
-1. Ouvre le fichier `the_shire.html` dans un navigateur moderne (Chrome, Firefox, Edge).
+1. Ouvre le fichier `index.html` dans un navigateur moderne (Chrome, Firefox, Edge).
 2. Assure-toi que les fichiers de modèles et textures sont bien présents dans le dossier du projet.
 3. Profite de l'exploration interactive de la Comté !
 
 ---
 
-**Auteur :** [Ton nom ici]
+**Auteur :** [Marie-GwenaëlleFahem]
 
 Projet réalisé dans le cadre d'un apprentissage de la 3D interactive avec Three.js. 
