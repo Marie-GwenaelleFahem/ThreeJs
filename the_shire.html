@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style-the-shire.css">
+    <title>The Shire</title>
+</head>
+<body>
+    <div id="threejs"></div>
+		<script type="module">
+			import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
+			import { OrbitControls } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js';
+			import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/loaders/GLTFLoader.js';
+			import { DRACOLoader } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/loaders/DRACOLoader.js';
+
+			// renderer
+			var renderer = new THREE.WebGLRenderer( {antialias :true} );
+		    renderer.setPixelRatio( window.devicePixelRatio );
+		    renderer.setSize( window.innerWidth, window.innerHeight );
+
+		   // scene
+
+           var scene = new THREE.Scene();
+           scene.background = new THREE.Color(0x87ceeb); // Bleu ciel
+           scene.fog = new THREE.Fog(0x87ceeb, 6, 28);
+
+           // Garden dimensions
+           const gardenWidth = 8;
+           const gardenLength = 6;
+           const postSpacing = 2;
+
+           // Hobbit house parameters
+           const hobbitHouseRadius = 2.5;
+           const hobbitHouseZ = -gardenLength/2 - hobbitHouseRadius + 0.2; // juste derrière la clôture
+           const hobbitHouseY = hobbitHouseRadius; // base de la sphère au niveau du sol
+
+			// camera
+
+			var camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1550 );
+		    camera.position.set(0, 5, 8);
+		    camera.lookAt(0, hobbitHouseY, hobbitHouseZ);
+
+		    // Texture
+		    const textureLoader = new THREE.TextureLoader();
+		    const texture = textureLoader.load('https://threejs.org/examples/textures/terrain/grasslight-big.jpg');
+		    
+		    // Texture bois réaliste pour la clôture
+		    const woodTexture = textureLoader.load('https://threejs.org/examples/textures/hardwood2_diffuse.jpg');
+		    woodTexture.wrapS = THREE.RepeatWrapping;
+		    woodTexture.wrapT = THREE.RepeatWrapping;
+		    woodTexture.repeat.set(1, 1);
+		    
+		    // Create a plane with the texture
+		    const planeGeometry = new THREE.PlaneGeometry(30, 30);
+		    const planeMaterial = new THREE.MeshStandardMaterial({
+		        map: texture,
+		        side: THREE.DoubleSide
+		    });
+		    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+		    plane.rotation.x = Math.PI / 2;
+		    scene.add(plane);
+
+		    // Create garden fence
+		    const fenceGroup = new THREE.Group();
+		    
+		    // Poteaux carrés (BoxGeometry)
+		    const postGeometry = new THREE.BoxGeometry(0.13, 0.7, 0.13); // Hauteur réduite
+		    const postMaterial = new THREE.MeshPhongMaterial({ color: 0xf5f5f5 }); // blanc cassé
+		    
+		    // Poutres rectangulaires (BoxGeometry)
+		    const beamGeometry = new THREE.BoxGeometry(2, 0.07, 0.13);
+		    const beamMaterial = new THREE.MeshPhongMaterial({ color: 0xf5f5f5 });
+		    
+		    // Fence sections
+		    // North side
+		    for(let i = -gardenWidth/2; i < gardenWidth/2; i += postSpacing) {
+		        if(i === -1) continue; // Skip center for gate
+		        // Left post
+		        const leftPost = new THREE.Mesh(postGeometry, postMaterial);
+		        leftPost.position.set(i, 0.35, -gardenLength/2);
+		        fenceGroup.add(leftPost);
+		        // Right post
+		        const rightPost = new THREE.Mesh(postGeometry, postMaterial);
+		        rightPost.position.set(i + postSpacing, 0.35, -gardenLength/2);
+		        fenceGroup.add(rightPost);
+		        // Top beam
+		        const topBeam = new THREE.Mesh(beamGeometry, beamMaterial);
+		        topBeam.position.set(i + postSpacing/2, 0.6, -gardenLength/2);
+		        fenceGroup.add(topBeam);
+		        // Bottom beam
+		        const bottomBeam = new THREE.Mesh(beamGeometry, beamMaterial);
+		        bottomBeam.position.set(i + postSpacing/2, 0.13, -gardenLength/2);
+		        fenceGroup.add(bottomBeam);
+		    }
+		    
+		    // South side
+		    for(let i = -gardenWidth/2; i < gardenWidth/2; i += postSpacing) {
+		        const leftPost = new THREE.Mesh(postGeometry, postMaterial);
+		        leftPost.position.set(i, 0.35, gardenLength/2);
+		        fenceGroup.add(leftPost);
+		        const rightPost = new THREE.Mesh(postGeometry, postMaterial);
+		        rightPost.position.set(i + postSpacing, 0.35, gardenLength/2);
+		        fenceGroup.add(rightPost);
+		        const topBeam = new THREE.Mesh(beamGeometry, beamMaterial);
+		        topBeam.position.set(i + postSpacing/2, 0.6, gardenLength/2);
+		        fenceGroup.add(topBeam);
+		        const bottomBeam = new THREE.Mesh(beamGeometry, beamMaterial);
+		        bottomBeam.position.set(i + postSpacing/2, 0.13, gardenLength/2);
+		        fenceGroup.add(bottomBeam);
+		    }
+		    
+		    // East side
+		    for(let i = -gardenLength/2; i < gardenLength/2; i += postSpacing) {
+		        const leftPost = new THREE.Mesh(postGeometry, postMaterial);
+		        leftPost.position.set(gardenWidth/2, 0.35, i);
+		        fenceGroup.add(leftPost);
+		        const rightPost = new THREE.Mesh(postGeometry, postMaterial);
+		        rightPost.position.set(gardenWidth/2, 0.35, i + postSpacing);
+		        fenceGroup.add(rightPost);
+		        const topBeam = new THREE.Mesh(beamGeometry, beamMaterial);
+		        topBeam.position.set(gardenWidth/2, 0.6, i + postSpacing/2);
+		        topBeam.rotation.y = Math.PI / 2;
+		        fenceGroup.add(topBeam);
+		        const bottomBeam = new THREE.Mesh(beamGeometry, beamMaterial);
+		        bottomBeam.position.set(gardenWidth/2, 0.13, i + postSpacing/2);
+		        bottomBeam.rotation.y = Math.PI / 2;
+		        fenceGroup.add(bottomBeam);
+		    }
+		    
+		    // West side
+		    for(let i = -gardenLength/2; i < gardenLength/2; i += postSpacing) {
+		        const leftPost = new THREE.Mesh(postGeometry, postMaterial);
+		        leftPost.position.set(-gardenWidth/2, 0.35, i);
+		        fenceGroup.add(leftPost);
+		        const rightPost = new THREE.Mesh(postGeometry, postMaterial);
+		        rightPost.position.set(-gardenWidth/2, 0.35, i + postSpacing);
+		        fenceGroup.add(rightPost);
+		        const topBeam = new THREE.Mesh(beamGeometry, beamMaterial);
+		        topBeam.position.set(-gardenWidth/2, 0.6, i + postSpacing/2);
+		        topBeam.rotation.y = Math.PI / 2;
+		        fenceGroup.add(topBeam);
+		        const bottomBeam = new THREE.Mesh(beamGeometry, beamMaterial);
+		        bottomBeam.position.set(-gardenWidth/2, 0.13, i + postSpacing/2);
+		        bottomBeam.rotation.y = Math.PI / 2;
+		        fenceGroup.add(bottomBeam);
+		    }
+		    
+		    // --- Portail réaliste ---
+		    const gateGroup = new THREE.Group();
+		    const gatePostGeometry = new THREE.BoxGeometry(0.13, 0.7, 0.13);
+		    const gatePostMaterial = new THREE.MeshPhongMaterial({ color: 0xf5f5f5 });
+		    // Gate posts
+		    const leftGatePost = new THREE.Mesh(gatePostGeometry, gatePostMaterial);
+		    leftGatePost.position.set(-1, 0.35, -gardenLength/2);
+		    gateGroup.add(leftGatePost);
+		    const rightGatePost = new THREE.Mesh(gatePostGeometry, gatePostMaterial);
+		    rightGatePost.position.set(1, 0.35, -gardenLength/2);
+		    gateGroup.add(rightGatePost);
+		    // Porte du portail : cadre + lattes
+		    const gateFrameGeometry = new THREE.BoxGeometry(1.8, 0.6, 0.08);
+		    const gateFrameMaterial = new THREE.MeshPhongMaterial({ color: 0xf5f5f5 });
+		    const gateFrame = new THREE.Mesh(gateFrameGeometry, gateFrameMaterial);
+		    gateFrame.position.set(0, 0.3, -gardenLength/2);
+		    gateGroup.add(gateFrame);
+		    // Pour l'animation d'ouverture, on référence le cadre comme la porte
+		    const gate = gateFrame;
+		    // Lattes verticales
+		    for(let i = -0.8; i <= 0.8; i += 0.25) {
+		        const slatGeometry = new THREE.BoxGeometry(0.08, 0.55, 0.12);
+		        const slat = new THREE.Mesh(slatGeometry, gateFrameMaterial);
+		        slat.position.set(i, 0.3, -gardenLength/2 + 0.01);
+		        gateGroup.add(slat);
+		    }
+		    // Barre horizontale centrale
+		    const midBarGeometry = new THREE.BoxGeometry(1.7, 0.07, 0.12);
+		    const midBar = new THREE.Mesh(midBarGeometry, gateFrameMaterial);
+		    midBar.position.set(0, 0.3, -gardenLength/2 + 0.04);
+		    gateGroup.add(midBar);
+		    // Ajout du portail au groupe clôture
+		    fenceGroup.add(gateGroup);
+		    
+		    // Position the fence
+		    fenceGroup.position.set(0, 0, 0);
+		    scene.add(fenceGroup);
+
+		    // Create garden plants
+		    const plantGroup = new THREE.Group();
+		    
+		    // Initialisation du DRACOLoader et du GLTFLoader pour charger les arbres et autres modèles GLB
+		    const dracoLoader = new DRACOLoader();
+		    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+		    const loader = new GLTFLoader();
+		    loader.setDRACOLoader(dracoLoader);
+		    
+		    // --- Arbres dans le jardin (symétriques et bien espacés) ---
+		    const gardenTreePositions = [
+		        {x: 2.5, z: 1.5},
+		        {x: 6.5, z: 1.5}
+		    ];
+		    gardenTreePositions.forEach(pos => {
+		        loader.load(
+		            'tree.glb',
+		            function(gltf) {
+		                const tree = gltf.scene;
+		                tree.position.set(pos.x, 0, pos.z);
+		                tree.scale.set(1.2, 1.2, 1.2);
+		                setShadowRecursively(tree); // Active les ombres sur l'arbre
+		                plantGroup.add(tree);
+		            },
+		            undefined,
+		            function(error) {
+		                console.error('Erreur de chargement du modèle tree.glb:', error);
+		            }
+		        );
+		    });
+		  
+		    
+		    scene.add(plantGroup);
+
+		    // --- MAISON DE HOBBIT STYLE HOBBITON ---
+		    const houseGroup = new THREE.Group();
+		    while (houseGroup.children.length > 0) houseGroup.remove(houseGroup.children[0]);
+
+		    // Structure principale (mur courbe)
+		    const wallGeometry = new THREE.CylinderGeometry(2.5, 2.5, 2.2, 32, 1, true, -Math.PI/2, Math.PI);
+		    const wallMaterial = new THREE.MeshPhongMaterial({ 
+		        color: 0xf4d03f, // Couleur beige/jaune
+		        side: THREE.DoubleSide 
+		    });
+		    const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+		    wall.position.set(0, 1.1, hobbitHouseZ - 2); // Reculé de 2 unités
+		    wall.rotation.z = Math.PI/2;
+		    houseGroup.add(wall);
+
+		    // Murs latéraux du passage
+		    const sideWallGeometry = new THREE.BoxGeometry(2, 2.2, 0.3);
+		    const sideWallMaterial = new THREE.MeshPhongMaterial({ 
+		        color: 0xf4d03f, // Même couleur que le mur principal
+		        side: THREE.DoubleSide
+		    });
+		    
+		    // Mur latéral gauche
+		    const leftWall = new THREE.Mesh(sideWallGeometry, sideWallMaterial);
+		    leftWall.position.set(-2.5, 1.1, hobbitHouseZ);
+		    houseGroup.add(leftWall);
+		    
+		    // Mur latéral droit
+		    const rightWall = new THREE.Mesh(sideWallGeometry, sideWallMaterial);
+		    rightWall.position.set(2.5, 1.1, hobbitHouseZ);
+		    houseGroup.add(rightWall);
+
+		    // Façade avant plate
+		    const facadeGeometry = new THREE.PlaneGeometry(5, 2.2);
+		    const facadeMaterial = new THREE.MeshPhongMaterial({ 
+		        color: 0xf4d03f,
+		        side: THREE.DoubleSide
+		    });
+		    const facade = new THREE.Mesh(facadeGeometry, facadeMaterial);
+		    facade.position.set(0, 1.1, hobbitHouseZ + 0.5); // Avancé pour créer le passage
+		    houseGroup.add(facade);
+
+		    // Poutres en bois
+		    const createBeam = (x, y, z, width, height, rotation = 0) => {
+		        const beamGeometry = new THREE.BoxGeometry(width, height, 0.2);
+		        const beamMaterial = new THREE.MeshPhongMaterial({ 
+		            color: 0x8b4513,
+		            map: woodTexture
+		        });
+		        const beam = new THREE.Mesh(beamGeometry, beamMaterial);
+		        beam.position.set(x, y, z);
+		        beam.rotation.z = rotation;
+		        houseGroup.add(beam);
+		    };
+
+		    // Ajouter les poutres principales sur la façade
+		    createBeam(-2.2, 1.1, hobbitHouseZ + 0.51, 0.3, 2.2); // Poutre verticale gauche
+		    createBeam(2.2, 1.1, hobbitHouseZ + 0.51, 0.3, 2.2);  // Poutre verticale droite
+		    createBeam(0, 2.1, hobbitHouseZ + 0.51, 4.7, 0.3);    // Poutre horizontale supérieure
+
+		    // Ajouter des poutres sur les murs latéraux
+		    createBeam(-2.5, 1.1, hobbitHouseZ - 0.9, 0.3, 2.2);  // Gauche arrière
+		    createBeam(-2.5, 1.1, hobbitHouseZ + 0.9, 0.3, 2.2);  // Gauche avant
+		    createBeam(2.5, 1.1, hobbitHouseZ - 0.9, 0.3, 2.2);   // Droite arrière
+		    createBeam(2.5, 1.1, hobbitHouseZ + 0.9, 0.3, 2.2);   // Droite avant
+
+		    // Porte ronde
+		    const doorRadius = 1.1;
+		    const doorGroup = new THREE.Group(); // Groupe pour la porte et ses éléments
+		    doorGroup.position.set(0, 1.1, hobbitHouseZ + 0.515);
+
+		    const doorFrameGeometry = new THREE.RingGeometry(doorRadius, doorRadius + 0.15, 32);
+		    const doorFrameMaterial = new THREE.MeshPhongMaterial({ 
+		        color: 0x8b4513,
+		        map: woodTexture
+		    });
+		    const doorFrame = new THREE.Mesh(doorFrameGeometry, doorFrameMaterial);
+		    doorFrame.position.set(0, 0, 0.005);
+		    doorGroup.add(doorFrame);
+
+		    // Porte elle-même
+		    const doorGeometry = new THREE.CircleGeometry(doorRadius, 32);
+		    const doorMaterial = new THREE.MeshPhongMaterial({ 
+		        color: 0xff0000,
+		        shininess: 30
+		    });
+		    const door = new THREE.Mesh(doorGeometry, doorMaterial);
+		    door.position.set(0, 0, 0);
+		    doorGroup.add(door);
+
+		    // Poignée de porte
+		    const doorKnobGeometry = new THREE.SphereGeometry(0.08, 16, 16);
+		    const doorKnobMaterial = new THREE.MeshStandardMaterial({ 
+		        color: 0xffd700,
+		        metalness: 0.7,
+		        roughness: 0.3
+		    });
+		    const doorKnob = new THREE.Mesh(doorKnobGeometry, doorKnobMaterial);
+		    doorKnob.position.set(0.7, 0, 0.015);
+		    doorGroup.add(doorKnob);
+
+		    // Point de pivot pour la porte
+		    doorGroup.position.set(-doorRadius, 1.1, hobbitHouseZ + 0.515); // Déplace le point de pivot sur le côté gauche
+		    houseGroup.add(doorGroup);
+
+		    // Fenêtre ronde
+		    const windowRadius = 0.4;
+		    const windowFrameGeometry = new THREE.RingGeometry(windowRadius, windowRadius + 0.05, 32);
+		    const windowFrame = new THREE.Mesh(windowFrameGeometry, doorFrameMaterial);
+		    windowFrame.position.set(1.5, 1.3, hobbitHouseZ + 0.52);
+		    houseGroup.add(windowFrame);
+
+		    const windowGeometry = new THREE.CircleGeometry(windowRadius, 32);
+		    const windowMaterial = new THREE.MeshPhongMaterial({ 
+		        color: 0x87ceeb,
+		        transparent: true,
+		        opacity: 0.7
+		    });
+		    const windowPane = new THREE.Mesh(windowGeometry, windowMaterial);
+		    windowPane.position.set(1.5, 1.3, hobbitHouseZ + 0.515);
+		    houseGroup.add(windowPane);
+
+		    // Toit végétalisé
+		    const roofGeometry = new THREE.CylinderGeometry(2.7, 2.7, 5.2, 32, 1, true, -Math.PI/2, Math.PI);
+		    const roofMaterial = new THREE.MeshPhongMaterial({ 
+		        color: 0x2ecc71,
+		        side: THREE.DoubleSide
+		    });
+		    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+		    roof.position.set(0, 2.3, hobbitHouseZ - 2); // Reculé comme le mur principal
+		    roof.rotation.z = Math.PI/2;
+		    houseGroup.add(roof);
+
+		    // Toit du passage
+		    const passageRoofGeometry = new THREE.PlaneGeometry(5.2, 2.5);
+		    const passageRoofMaterial = new THREE.MeshPhongMaterial({ 
+		        color: 0x2ecc71,
+		        side: THREE.DoubleSide
+		    });
+		    const passageRoof = new THREE.Mesh(passageRoofGeometry, passageRoofMaterial);
+		    passageRoof.position.set(0, 2.3, hobbitHouseZ);
+		    passageRoof.rotation.x = Math.PI/2;
+		    houseGroup.add(passageRoof);
+
+		    // Pile de bois (à gauche de la porte)
+		    const createWoodPile = () => {
+		        const woodPileGroup = new THREE.Group();
+		        for(let i = 0; i < 6; i++) {
+		            const logGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
+		            const logMaterial = new THREE.MeshPhongMaterial({ 
+		                color: 0x8b4513,
+		                map: woodTexture
+		            });
+		            const log = new THREE.Mesh(logGeometry, logMaterial);
+		            log.position.set(-1.8, 0.1 + (i * 0.2), hobbitHouseZ + 0.3);
+		            woodPileGroup.add(log);
+		        }
+		        houseGroup.add(woodPileGroup);
+		    };
+		    createWoodPile();
+
+		    // Ajouter des touffes d'herbe devant la maison à la place des fleurs
+		    const createGrassTufts = () => {
+		        const grassGroup = new THREE.Group();
+		        const grassColor = textureLoader.load('nature/grass/color.png');
+		        const grassMaterial = new THREE.MeshBasicMaterial({
+		            map: grassColor,
+		            transparent: true,
+		            side: THREE.DoubleSide
+		        });
+		        // Largeur de la maison (façade PlaneGeometry(5, ...))
+		        const houseWidth = 5;
+		        const minX = -houseWidth/2;
+		        const maxX = houseWidth/2;
+		        // Définir le chemin du portail à la maison
+		        const startZ = -gardenLength/2 + 0.5;
+		        const endZ = hobbitHouseZ + 0.7;
+		        const stepCountZ = 40;
+		        const stepCountX = 16;
+		        for(let i = 0; i <= stepCountZ; i++) {
+		            const t = i / stepCountZ;
+		            const z = startZ + (endZ - startZ) * t;
+		            for(let j = 0; j <= stepCountX; j++) {
+		                const s = j / stepCountX;
+		                const x = minX + (maxX - minX) * s + (Math.random()-0.5)*0.08;
+		                const width = 0.28 + Math.random() * 0.18;
+		                const height = 0.55 + Math.random() * 0.25;
+		                const y = 0.25 + Math.random() * 0.18;
+		                const grassGeometry = new THREE.PlaneGeometry(width, height);
+		                const grass = new THREE.Mesh(grassGeometry, grassMaterial);
+		                grass.position.set(x, y, z);
+		                grass.rotation.y = Math.random() * Math.PI;
+		                grassGroup.add(grass);
+		            }
+		        }
+		        houseGroup.add(grassGroup);
+		    };
+		    createGrassTufts();
+
+		    // --- Ajout de fleurs dans le jardin ---
+		    const flowerGroup = new THREE.Group();
+		    const flowerAlpha = textureLoader.load('nature/alpha1.png');
+		    // Palette de couleurs vives pour les fleurs
+		    const flowerColors = [
+		        0xff69b4, // rose
+		        0xffd700, // jaune
+		        0x00ff00, // vert
+		        0x00bfff, // bleu clair
+		        0xff4500, // orange
+		        0x9400d3, // violet
+		        0xff1493, // rose vif
+		        0x00fa9a, // vert menthe
+		        0x1e90ff, // bleu
+		        0xff6347, // rouge tomate
+		        0xadff2f, // vert citron
+		        0xff8c00, // orange foncé
+		        0x8a2be2, // bleu violet
+		        0xc71585, // violet moyen
+		        0x7fff00, // vert chartreuse
+		        0x40e0d0, // turquoise
+		        0xff00ff, // magenta
+		        0x00ced1, // turquoise foncé
+		        0xffb6c1, // rose clair
+		        0x228b22  // vert forêt
+		    ];
+		    // Générer 20 positions aléatoires dans le jardin
+		    for(let i = 0; i < 20; i++) {
+		        const color = flowerColors[i % flowerColors.length];
+		        const flowerMaterial = new THREE.MeshBasicMaterial({
+		            color: color,
+		            alphaMap: flowerAlpha,
+		            transparent: true,
+		            side: THREE.DoubleSide
+		        });
+		        // Position aléatoire dans le jardin (hors maison)
+		        const x = (Math.random() - 0.5) * 7.5;
+		        const z = (Math.random() - 0.5) * 5.5;
+		        const flower = new THREE.Mesh(
+		            new THREE.PlaneGeometry(0.5, 0.7),
+		            flowerMaterial
+		        );
+		        flower.position.set(x, 0.35, z);
+		        flower.rotation.y = Math.random() * Math.PI;
+		        flowerGroup.add(flower);
+		    }
+		    scene.add(flowerGroup);
+
+		    // Ajouter le groupe de la maison à la scène
+		    scene.add(houseGroup);
+
+		    // Chemin en pierres
+		    const pathGroup = new THREE.Group();
+		    const startZ = hobbitHouseZ + 0.7;
+		    const endZ = -gardenLength/2 + 0.5;
+		    const stepCount = 8;
+		    for(let i = 0; i <= stepCount; i++) {
+		        const t = i / stepCount;
+		        const z = startZ + (endZ - startZ) * t;
+		        const stoneGeometry = new THREE.CylinderGeometry(0.22 + 0.05*Math.sin(i), 0.22 + 0.05*Math.cos(i), 0.08, 20);
+		        const stoneMaterial = new THREE.MeshPhongMaterial({ color: 0xcccccc });
+		        const stone = new THREE.Mesh(stoneGeometry, stoneMaterial);
+		        stone.position.set(0.05 * Math.sin(i*0.7), 0.04, z);
+		        stone.castShadow = true;
+		        stone.receiveShadow = true;
+		        pathGroup.add(stone);
+		    }
+		    scene.add(pathGroup);
+
+		    // Enhanced lighting system
+		    // Main directional light (sun)
+		    const sunLight = new THREE.DirectionalLight(0xffffcc, 1.7);
+		    sunLight.position.set(10, 10, 20);
+		    sunLight.castShadow = true;
+		    sunLight.shadow.mapSize.width = 4096;
+		    sunLight.shadow.mapSize.height = 4096;
+		    sunLight.shadow.bias = -0.0005;
+		    sunLight.shadow.radius = 4;
+		    sunLight.shadow.camera.near = 0.5;
+		    sunLight.shadow.camera.far = 100;
+		    sunLight.shadow.camera.left = -30;
+		    sunLight.shadow.camera.right = 30;
+		    sunLight.shadow.camera.top = 30;
+		    sunLight.shadow.camera.bottom = -30;
+		    scene.add(sunLight);
+
+		    // Ambient light for overall scene brightness
+		    const ambientLight = new THREE.AmbientLight(0x404060, 0.18);
+		    scene.add(ambientLight);
+
+		    // Warm fill light from the opposite side
+		    const fillLight = new THREE.DirectionalLight(0xffaa44, 0.3);
+		    fillLight.position.set(-10, 10, -10);
+		    scene.add(fillLight);
+
+		    // Enable shadows in the renderer
+		    renderer.shadowMap.enabled = true;
+		    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+		    // Enable shadows for all objects
+		    plane.receiveShadow = true;
+		    fenceGroup.children.forEach(child => {
+		        child.castShadow = true;
+		        child.receiveShadow = true;
+		    });
+
+		    // Add a subtle point light near the gate
+		    const gateLight = new THREE.PointLight(0xffaa44, 0.5, 10);
+		    gateLight.position.set(0, 2, -gardenLength/2 - 1);
+		    scene.add(gateLight);
+
+		    // Add a subtle point light in the center of the garden
+		    const gardenLight = new THREE.PointLight(0x88ff88, 0.3, 8);
+		    gardenLight.position.set(0, 2, 0);
+		    scene.add(gardenLight);
+
+		    // Déclaration globale pour Bilbo
+		    let bilboCharacter;
+
+		    // Movement controls
+		    const moveSpeed = 0.1; // Reduced speed for more precise movement
+		    window.addEventListener('keydown', (event) => {
+		        if (!bilboCharacter) return;
+		        switch(event.key) {
+		            case 'ArrowLeft':
+		                bilboCharacter.position.x -= moveSpeed;
+		                break;
+		            case 'ArrowRight':
+		                bilboCharacter.position.x += moveSpeed;
+		                break;
+		            case 'ArrowUp':
+		                bilboCharacter.position.z -= moveSpeed;
+		                break;
+		            case 'ArrowDown':
+		                bilboCharacter.position.z += moveSpeed;
+		                break;
+		        }
+		    });
+
+		    // Handle window resize
+		    window.addEventListener('resize', () => {
+		        // Update camera
+		        camera.aspect = window.innerWidth / window.innerHeight;
+		        camera.updateProjectionMatrix();
+		        
+		        // Update renderer
+		        renderer.setSize(window.innerWidth, window.innerHeight);
+		    });
+
+		    var container = document.getElementById( 'threejs' );
+			container.appendChild( renderer.domElement );
+
+			var controls = new OrbitControls(camera, renderer.domElement);
+
+			requestAnimationFrame(render);
+
+			function render() 
+			{
+			    // Check distance between Bilbo et gate
+			    let distance = 9999;
+			    if (bilboCharacter) {
+			        distance = bilboCharacter.position.distanceTo(gate.position);
+			    }
+			    const openDistance = 3; // Distance at which gate opens
+			    
+			    // Rotate gate based on distance
+			    if(distance < openDistance) {
+			        gate.rotation.y = Math.min(Math.PI / 2, gate.rotation.y + 0.05);
+			    } else {
+			        gate.rotation.y = Math.max(0, gate.rotation.y - 0.05);
+			    }
+
+			    // Check distance between Bilbo et door
+			    let doorDistance = 9999;
+			    if (bilboCharacter) {
+			        doorDistance = bilboCharacter.position.distanceTo(doorGroup.position);
+			    }
+			    const doorOpenDistance = 2; // Distance at which door opens
+			    
+			    // Rotate door based on distance (negative angle pour ouvrir vers l'intérieur)
+			    if(doorDistance < doorOpenDistance) {
+			        doorGroup.rotation.y = Math.max(-Math.PI * 0.7, doorGroup.rotation.y - 0.05); // 126 degrés vers l'intérieur
+			    } else {
+			        doorGroup.rotation.y = Math.min(0, doorGroup.rotation.y + 0.05);
+			    }
+			    
+			    renderer.render( scene, camera );
+			    requestAnimationFrame(render);
+			}
+
+			// Fonction utilitaire pour activer les ombres récursivement sur tous les Mesh d'un objet
+			function setShadowRecursively(object) {
+			    if (!object || typeof object.traverse !== 'function') return;
+			    object.traverse(child => {
+			        if (child && child.isMesh) {
+			            child.castShadow = true;
+			            child.receiveShadow = true;
+			        }
+			    });
+			}
+
+			
+			loader.load(
+			    'bilbo_baggins.glb',
+			    function(gltf) {
+			        bilboCharacter = gltf.scene;
+			        bilboCharacter.position.set(1.5, 1, 0);
+			        bilboCharacter.scale.set(0.05, 0.05, 0.05); 
+			        scene.add(bilboCharacter);
+			    },
+			    undefined,
+			    function(error) {
+			        console.error('Erreur de chargement du modèle bilbo_baggins.glb:', error);
+			    }
+			);
+		</script>
+</body>
+</html>
